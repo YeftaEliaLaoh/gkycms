@@ -1,0 +1,1 @@
+<strong>Copyright &copy; <?php echo date('Y'); ?> <a target='_BLANK' href=""> Aplikasi Swakelola RKAKL</a>.</strong> All rights reserved.

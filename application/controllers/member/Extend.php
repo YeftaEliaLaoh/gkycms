@@ -1,0 +1,165 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+class Extend extends CI_Controller {
+	public function __construct()
+	{
+		parent::__construct();
+
+		//$this->load->model('model_brand','brand');
+
+		error_reporting(0);
+		
+	}
+	
+	function index(){
+		
+		cek_session_admin();
+		
+		$level = $this->session->level;
+		$data['title'] = "Data Member Extend";
+		$data['column'] = array("No Anggota Jemaat","Nama Anggota Jemaat","Tanggal Lahir","Alamat Rumah","Kode Pos","No. Telepon","Kelas","Status","Action");
+		//$data['add'] = "master/home/view_home";
+		$data['modal_header'] = "List Transaction";
+		$data['list'] = "member/extend/data_list";
+		$id = 2;
+		
+		if($level == 'admin' || $level == 'user' || $level == 'owner') {
+			$this->template->load('administrator/template','administrator/mod_global/view_global',$data);
+		} else {
+			redirect(base_url());
+		}
+		
+	}
+
+	function data_list() {
+
+		$token = $this->session->token;
+		$curl = curl_init();
+		$limit = 20;
+		$start = $_POST['start'];
+		$search = $_POST['search']['value'];
+
+	//		$page = $_POST['length']/$limit;
+		if(empty($start)) {
+			$page = 1;
+		} else {
+			$page = $start+1;
+		}
+		
+		$curl = curl_init();
+
+		curl_setopt_array($curl, array(
+		CURLOPT_URL => URL_API."admin/member/list_approval_extend?perpage=$limit&page=$page",
+		CURLOPT_RETURNTRANSFER => true,
+		CURLOPT_ENCODING => '',
+		CURLOPT_MAXREDIRS => 10,
+		CURLOPT_TIMEOUT => 0,
+		CURLOPT_FOLLOWLOCATION => true,
+		CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		CURLOPT_CUSTOMREQUEST => 'POST',
+		CURLOPT_POSTFIELDS => array('like'=>$search),
+		CURLOPT_HTTPHEADER => array(
+			'token: '.$token
+		),
+		));
+
+		$response = curl_exec($curl);
+
+		curl_close($curl);
+
+		$data_list = json_decode($response);
+		$dt = $data_list->data;
+		$dat = $dt->data;
+
+		$data = array();
+
+		foreach($dat as $l) {
+			$no++;
+			$row = array();
+			$id = $l->id;
+
+			$row[] = $l->nomor_anggota;
+			$row[] = $l->nama_anggota;
+			$row[] = tgl_view($l->tanggal_lahir);
+			$row[] = $l->alamat;
+			$row[] = $l->kode_pos;
+			$row[] = $l->phone_number;
+			$row[] = $l->kelas;
+			$row[] = $l->status;
+
+			$edit = "<a class='btn btn-success btn-xs' id='deletekegiatan'  href='#' data-id='$id' data-href='".base_url("api/cms/approve_extend?id=$id")."'>Approve</a>";
+			//$edit =  "<a class='btn btn-success btn-xs' id='openkegiatan'  data-toggle='modal' data-target='#showmodalkegiatan' data-header='Konfirmasi' href='#' data-id='$id' data-href='".base_url("member/extend/approve?id=$id")."'>Approve</a>";
+			$delete = "<a class='btn btn-danger btn-xs' id='deletekegiatan'  href='#' data-id='$id' data-href='".base_url("api/cms/reject_extend?id=$id")."'>Reject</a>";
+
+			$action = $edit.'&nbsp;'.$delete;
+
+			$row[] = $action;
+
+			$data[] = $row;
+		}
+
+		$output = array(
+						"draw" => $_POST['draw'],
+						"recordsTotal" => $dt->total,
+						"recordsFiltered" => $dt->total,
+						"data" => $data,
+				);
+		//output to json format
+		echo json_encode($output);
+	}
+
+	function approve() {
+		$id = $this->input->get("id");
+
+		$url_hb = base_url();
+
+		$hb = "<a class='btn btn-success btn-xs' id='updatemodal'  href='#' data-id='$id' data-href='".base_url("api/cms/approve?id=$id&type=hamba")."'>Hamba Tuhan</a>";
+		$jemaat = "<a class='btn btn-danger btn-xs' id='updatemodal'  href='#' data-id='$id' data-href='".base_url("api/cms/approve?id=$id")."'>Jemaat</a>";
+
+		echo "Apakah jenis member ini ? <br><br> $hb $jemaat <div class='mb-3'></div>";
+	}
+
+	function view_home() {
+		$data = array();
+		$id = $this->uri->segment(4);
+		if(!empty($id)) {
+			$data['submit_name'] = "Update";
+			$data['act'] = "update";
+			
+			$data['id'] = $id;
+			$r = $this->home->home_edit($id)->row();
+			$data['row'] = $r;
+
+			$getkode = $r->kodecc;
+			
+		} else {
+			$data['submit_name'] = "Save";
+			$data['act'] = "save";
+			$data['id'] = "";
+			$data['row'] = "";
+			$r = "";
+
+			$getkode = getkode_cc();
+		}
+		$data['post'] = "crud_global";
+		$data['tbl'] = "tbcc";
+		
+		$username = $this->session->username;
+		$user_id = $this->session->id;
+
+		$opt2 = $this->costcentre->kategori_all();
+		$opt_kategori = option_builder($opt2,$r->kategori,0);
+
+		$data['column'][] = array("nama"=>"Kode Cost Centre","type"=>"readonly","value"=>$getkode,"placeholder"=>"","pst_name"=>"kodecc","id"=>"kodecc","col"=>"6");
+		$data['column'][] = array("nama"=>"Nama Departemen","type"=>"text","value"=>@$r->namadep,"placeholder"=>"Input Nama Depart","pst_name"=>"namadep","id"=>"namadep","col"=>"6","required"=>"required");
+        $data['column'][] = array("nama"=>"Kode Biaya","type"=>"text","value"=>@$r->kodebiaya,"placeholder"=>"Input Kode Biaya","pst_name"=>"kodebiaya","id"=>"kodebiaya","col"=>"6","required"=>"required");
+        $data['column'][] = array("nama"=>"Kategori","type"=>"option","value"=>"","placeholder"=>"","pst_name"=>"kategori","id"=>"kategori","col"=>"6","option"=>$opt_kategori);
+        $data['column'][] = array("nama"=>"Keterangan","type"=>"textarea","value"=>@$r->ket,"placeholder"=>"","pst_name"=>"ket","id"=>"ket","col"=>"12");
+		$data['column'][] = array("nama"=>"user","type"=>"addon","value"=>"$username","placeholder"=>"","pst_name"=>"user","id"=>"user","col"=>"3");
+        
+		$this->load->view('modal/global',$data);
+	}
+
+
+
+}
