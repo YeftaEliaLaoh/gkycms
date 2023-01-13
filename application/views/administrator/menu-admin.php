@@ -193,14 +193,14 @@ $name = "Admin";
       </ul>
     </li>
     
-    <li class="nav-item">
+    <!-- <li class="nav-item">
       <a href="<?= base_url('settings'); ?>" class="nav-link <?php if($uri == 'settings') { echo 'active'; } ?>">
         <i class="nav-icon fas fa-cog"></i>
         <p>
           Settings
         </p>
       </a>
-    </li>
+    </li> -->
 
 
     <li class="nav-item">
