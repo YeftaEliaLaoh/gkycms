@@ -182,7 +182,7 @@ class Items extends CI_Controller {
 //		echo $id;
 		$token = $this->session->token;
 		if(!empty($id)) {
-			var_dump("tes1");
+			//var_dump("tes1");
 			$data['submit_name'] = "Update";
 			$data['act'] = "update";
 			$jj = base64_decode($id);
